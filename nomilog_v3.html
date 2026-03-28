@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>飲み会ログ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#f7f2e8;--dark:#2a2218;--gold:#c9922a;
+  --gold-light:#f0d9a8;--gold-pale:#faf3e0;
+  --text:#2a2218;--muted:#8a7d6a;--border:#e0d5c0;
+  --card:#ffffff;--cream:#ede8dc;--incomplete:#fff8ed;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1a12;--dark:#f7f2e8;--gold:#e0a83a;
+  --gold-light:#5a4010;--gold-pale:#2a2010;
+  --text:#f0e8d5;--muted:#9a8d7a;--border:#3a3020;
+  --card:#2a2418;--incomplete:#2e2410;
+}}
+body{background:#1a1a1a;display:flex;justify-content:center;min-height:100vh;font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;}
+.phone{width:100%;max-width:390px;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;}
+.screen{display:none;flex-direction:column;flex:1;}
+.screen.active{display:flex;}
+.status-bar{background:var(--dark);padding:14px 24px 10px;display:flex;justify-content:space-between;flex-shrink:0;}
+.st{color:var(--bg);font-size:13px;font-weight:500;opacity:.9;}
+.si{color:var(--bg);font-size:11px;opacity:.7;}
+.nav-header{background:var(--dark);padding:12px 20px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.nav-back{color:var(--gold);font-size:14px;cursor:pointer;}
+.nav-title{color:var(--bg);font-size:15px;font-weight:500;opacity:.9;}
+.nav-action{color:var(--gold);font-size:13px;font-weight:500;cursor:pointer;}
+.body{padding:16px;overflow-y:auto;flex:1;}
+.bottom-nav{background:var(--dark);border-top:0.5px solid var(--border);display:flex;padding:10px 0 20px;flex-shrink:0;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative;}
+.nav-label{font-size:10px;color:var(--muted);}
+.nav-label.active{color:var(--gold);}
+.nav-badge{position:absolute;top:-2px;right:16px;width:8px;height:8px;border-radius:50%;background:#d05538;border:1.5px solid var(--dark);}
+
+/* CARDS */
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px;}
+.card-header{background:var(--dark);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.card-header-title{color:var(--gold);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;}
+.card-header-sub{color:var(--bg);font-size:12px;opacity:.6;}
+.card-body{padding:14px 16px;}
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.field-label{font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:500;}
+.divider{height:0.5px;background:var(--border);margin:12px 0;}
+.chip-wrap{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{font-size:12px;padding:6px 12px;border-radius:20px;border:0.5px solid var(--border);color:var(--muted);background:var(--bg);cursor:pointer;transform-origin:center;}
+.chip.sel{background:var(--dark);color:var(--gold);border-color:var(--dark);}
+.score-wrap{display:flex;gap:6px;align-items:center;}
+.score-btn{width:44px;height:44px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg);font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transform-origin:center;}
+.score-btn.sel{background:var(--dark);border-color:var(--dark);color:var(--gold);font-weight:500;}
+.score-hint{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-top:5px;}
+.member-wrap{display:flex;gap:6px;flex-wrap:wrap;}
+.member-chip{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;background:var(--dark);}
+.member-name{font-size:12px;color:var(--gold);}
+.member-add{padding:5px 12px;border-radius:20px;border:0.5px dashed var(--border);font-size:12px;color:var(--muted);background:transparent;cursor:pointer;}
+.member-special{padding:5px 12px;border-radius:20px;border:0.5px solid var(--border);font-size:12px;color:var(--muted);background:var(--bg);cursor:pointer;}
+.primary-btn{width:100%;background:var(--dark);color:var(--gold);border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:500;cursor:pointer;transform-origin:center;}
+.field-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border);}
+.field-row:last-child{border-bottom:none;}
+.field-row-label{font-size:12px;color:var(--muted);}
+.field-row-val{font-size:13px;color:var(--text);font-weight:500;}
+
+/* HOME */
+.app-header{background:var(--dark);padding:16px 24px 20px;flex-shrink:0;}
+.app-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.app-title-wrap{display:flex;align-items:center;gap:8px;}
+.app-name{color:var(--gold);font-size:22px;font-weight:500;}
+.header-date{color:var(--bg);font-size:12px;opacity:.6;}
+.header-sub{color:var(--bg);font-size:12px;opacity:.5;}
+.incomplete-banner{background:var(--incomplete);border:1px solid var(--gold-light);border-radius:14px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.incomplete-left{display:flex;align-items:center;gap:10px;}
+.incomplete-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.incomplete-text{font-size:13px;color:var(--text);line-height:1.4;}
+.incomplete-label{font-size:11px;color:var(--muted);margin-top:1px;}
+.incomplete-btn{font-size:12px;color:var(--gold);font-weight:500;white-space:nowrap;border:1px solid var(--gold-light);border-radius:20px;padding:5px 12px;background:transparent;cursor:pointer;}
+.record-btn{width:100%;background:var(--dark);color:var(--gold);border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.section-label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.06em;margin-bottom:10px;}
+.insight-card{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+.insight-eyebrow{font-size:11px;font-weight:500;color:var(--gold);background:var(--gold-pale);padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:8px;}
+.insight-main{font-size:14px;font-weight:500;color:var(--text);line-height:1.5;margin-bottom:4px;}
+.insight-sub{font-size:12px;color:var(--muted);}
+.insight-row{display:flex;gap:8px;margin-bottom:10px;}
+.insight-half{flex:1;background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:12px 14px;}
+.star{width:10px;height:10px;background:var(--gold);clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);display:inline-block;}
+.star-wrap{display:flex;gap:2px;margin-top:4px;}
+
+/* DRINK CARD */
+.drink-card{background:var(--bg);border-radius:18px;border:2px solid var(--gold);box-shadow:0 3px 0 #a87820,0 5px 14px rgba(42,34,24,0.15);overflow:hidden;margin-bottom:14px;}
+.dc-header{background:var(--dark);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+.dc-date{color:var(--gold);font-size:15px;font-weight:500;}
+.dc-type{font-size:11px;color:var(--muted);background:rgba(201,146,42,0.12);padding:2px 8px;border-radius:8px;}
+.dc-scores{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);}
+.dc-score{padding:12px 6px;text-align:center;border-right:1px solid var(--border);}
+.dc-score:last-child{border-right:none;}
+.dc-s-label{font-size:9px;color:var(--muted);margin-bottom:3px;}
+.dc-s-val{font-size:20px;font-weight:500;color:var(--gold);line-height:1.1;}
+.dc-s-unit{font-size:9px;color:var(--muted);}
+.dc-s-sub{font-size:9px;color:#c9b090;margin-top:2px;}
+.dc-time{padding:9px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.dc-t-row{display:flex;align-items:center;gap:5px;}
+.dc-t-label{font-size:10px;color:var(--muted);}
+.dc-t-val{font-size:13px;font-weight:500;color:var(--text);}
+.dc-t-arrow{font-size:10px;color:#c9b090;}
+.dc-t-dur{font-size:11px;color:var(--muted);background:var(--cream);padding:2px 8px;border-radius:7px;}
+.dc-venues{padding:9px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.dc-vp{font-size:11px;color:#5a4e3f;background:var(--cream);padding:2px 8px;border-radius:8px;}
+.dc-va{font-size:11px;color:#c9b090;}
+.dc-members{padding:9px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.dc-m-label{font-size:10px;color:var(--muted);flex-shrink:0;}
+.dc-avatars{display:flex;gap:4px;}
+.dc-avatar{height:20px;padding:0 5px;border-radius:10px;background:var(--cream);font-size:9px;color:#5a4e3f;font-weight:500;display:flex;align-items:center;border:0.5px solid var(--border);}
+.dc-morning-pending{padding:9px 15px;background:var(--incomplete);display:flex;align-items:center;justify-content:space-between;}
+.dc-morning-done{padding:9px 15px;background:var(--gold-pale);display:flex;align-items:center;justify-content:space-between;}
+.dc-mp-text{font-size:11px;color:var(--gold);}
+.dc-mp-btn{font-size:11px;color:var(--gold);border:0.5px solid var(--gold-light);border-radius:10px;padding:3px 10px;background:transparent;cursor:pointer;font-weight:500;}
+.dc-memo{padding:9px 15px;background:#fdfaf5;border-top:1px solid var(--border);}
+.dc-memo-label{font-size:9px;color:var(--muted);margin-bottom:3px;font-weight:500;}
+.dc-memo-text{font-size:12px;color:var(--text);line-height:1.6;}
+
+/* COMMENTS */
+.comment-card{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.c-row{display:flex;gap:8px;align-items:flex-start;}
+.c-avatar{width:28px;height:28px;border-radius:50%;background:var(--dark);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.c-name{font-size:11px;color:var(--muted);margin-bottom:3px;}
+.c-text{font-size:13px;color:var(--text);line-height:1.6;}
+.night-btn{width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--gold);background:transparent;font-size:13px;color:var(--gold);cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;}
+.section-divider{display:flex;align-items:center;gap:8px;margin:12px 0;}
+.sd-line{flex:1;height:0.5px;background:var(--border);}
+.sd-label{font-size:10px;color:var(--muted);white-space:nowrap;}
+.complete-banner{background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.complete-icon{width:20px;height:20px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.complete-text{font-size:13px;color:var(--text);font-weight:500;}
+.half-badge{font-size:11px;background:var(--gold-pale);color:#854F0B;padding:2px 8px;border-radius:8px;border:0.5px solid var(--gold-light);}
+
+/* MORNING */
+.morning-card{background:var(--card);border:1.5px solid var(--gold);border-radius:16px;overflow:hidden;margin-bottom:12px;}
+.morning-header{background:var(--gold-pale);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.morning-title{font-size:13px;font-weight:500;color:var(--gold);}
+.morning-badge{font-size:11px;background:var(--gold);color:var(--card);padding:2px 8px;border-radius:8px;font-weight:500;}
+.cond-wrap{display:flex;gap:6px;justify-content:center;padding:4px 0;}
+.cond-item{text-align:center;}
+.cond-btn{width:50px;height:50px;border-radius:12px;border:0.5px solid var(--border);background:var(--bg);font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto;transform-origin:center;}
+.cond-btn.sel{background:var(--dark);border-color:var(--dark);}
+.cond-label{font-size:10px;color:var(--muted);margin-top:4px;}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin:10px 0 4px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--gold);border-radius:2px;}
+.progress-label{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;}
+.waiting-text{font-size:13px;color:var(--gold);text-align:center;padding:10px;background:var(--gold-pale);border-radius:10px;margin-bottom:10px;}
+
+/* AMOUNT */
+.quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:14px;}
+.q-btn{padding:9px 4px;border-radius:10px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;color:var(--muted);cursor:pointer;text-align:center;transform-origin:center;}
+.q-btn.sel{background:var(--dark);color:var(--gold);border-color:var(--dark);font-weight:500;}
+.q-btn.ogori{background:var(--gold-pale);color:#854F0B;border-color:var(--gold-light);font-size:11px;line-height:1.5;}
+.q-btn.ogori.sel{background:var(--dark);color:var(--gold);border-color:var(--dark);}
+.q-btn.other{border-style:dashed;font-size:11px;}
+.q-btn.other.sel{background:var(--dark);color:var(--gold);border-color:var(--dark);border-style:solid;}
+.adjust-row{display:flex;align-items:center;background:var(--bg);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.adj-btn{width:56px;height:52px;border:none;background:transparent;font-size:24px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transform-origin:center;}
+.adj-divider{width:0.5px;height:28px;background:var(--border);flex-shrink:0;}
+.adj-center{flex:1;text-align:center;}
+.adj-amount{font-size:22px;font-weight:500;color:var(--text);}
+.adj-unit{font-size:11px;color:var(--muted);margin-top:1px;}
+.disabled{opacity:.3;pointer-events:none;}
+.manual-wrap{display:none;margin-bottom:10px;}
+.manual-wrap.show{display:block;}
+.manual-label{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.manual-input-row{display:flex;align-items:center;gap:8px;}
+.yen-sign{font-size:16px;color:var(--muted);}
+.manual-input{flex:1;background:var(--bg);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:16px;color:var(--text);font-weight:500;text-align:right;}
+.ogori-note{margin-bottom:10px;background:var(--gold-pale);border-radius:8px;padding:8px 12px;font-size:12px;color:#854F0B;display:none;line-height:1.6;}
+.ogori-note.show{display:block;}
+.amount-result-row{padding-top:12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+
+/* LIST */
+.month-bar{background:var(--cream);padding:6px 16px;display:flex;align-items:center;justify-content:space-between;}
+.month-label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.05em;}
+.month-count{font-size:11px;color:var(--muted);}
+.list-item{background:var(--bg);border-bottom:0.5px solid var(--border);padding:12px 16px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;}
+.list-item.incomplete{background:var(--incomplete);}
+.date-col{text-align:center;flex-shrink:0;width:28px;padding-top:1px;}
+.date-day{font-size:18px;font-weight:500;color:var(--text);line-height:1.1;}
+.date-dow{font-size:10px;color:var(--muted);margin-top:1px;}
+.list-content{flex:1;min-width:0;}
+.list-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.list-place{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px;}
+.list-amount{font-size:13px;font-weight:500;color:var(--gold);flex-shrink:0;}
+.list-row2{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
+.ken-badge{font-size:11px;color:var(--muted);background:var(--cream);padding:1px 6px;border-radius:5px;flex-shrink:0;}
+.store-flow{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.list-row3{display:flex;align-items:center;justify-content:space-between;}
+.list-members{display:flex;align-items:center;gap:3px;flex:1;overflow:hidden;}
+.l-avatar{height:20px;padding:0 5px;border-radius:10px;background:var(--cream);display:flex;align-items:center;font-size:9px;color:#5a4e3f;font-weight:500;border:0.5px solid var(--border);white-space:nowrap;flex-shrink:0;}
+.l-more{font-size:11px;color:var(--muted);margin-left:2px;flex-shrink:0;}
+.list-scores{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.score-item{display:flex;align-items:center;gap:2px;}
+.score-item-label{font-size:9px;color:var(--muted);}
+.score-item-num{font-size:13px;font-weight:500;color:var(--text);}
+.score-item-emoji{font-size:14px;line-height:1;}
+.score-sep{width:1px;height:12px;background:var(--border);}
+.incomplete-badge{font-size:10px;color:var(--gold);background:var(--gold-pale);padding:1px 7px;border-radius:6px;border:0.5px solid var(--gold-light);margin-left:4px;white-space:nowrap;}
+
+/* KIOKU */
+.kioku-header{background:var(--dark);padding:10px 18px 0;flex-shrink:0;}
+.kh-title{color:var(--gold);font-size:19px;font-weight:500;margin-bottom:2px;}
+.kh-sub{color:rgba(247,242,232,0.4);font-size:11px;margin-bottom:10px;}
+.kioku-tab-bar{display:flex;border-bottom:0.5px solid rgba(201,146,42,0.2);}
+.kioku-tab{flex:1;padding:10px 0 8px;text-align:center;cursor:pointer;border-bottom:2px solid transparent;}
+.kioku-tab.act{border-bottom-color:var(--gold);}
+.kt-label{font-size:13px;color:rgba(247,242,232,0.4);}
+.kioku-tab.act .kt-label{color:var(--gold);font-weight:500;}
+.kt-sub{font-size:9px;color:rgba(247,242,232,0.25);margin-top:1px;}
+.kioku-tab.act .kt-sub{color:rgba(201,146,42,0.6);}
+.big-row{display:flex;gap:8px;margin-bottom:8px;}
+.big-card{flex:1;background:var(--dark);border-radius:12px;padding:12px 14px;}
+.bc-label{font-size:9px;color:rgba(247,242,232,0.4);margin-bottom:4px;}
+.bc-val{font-size:22px;font-weight:500;color:var(--gold);line-height:1.1;}
+.bc-unit{font-size:10px;color:rgba(247,242,232,0.4);font-weight:400;}
+.bc-diff{font-size:10px;margin-top:4px;font-weight:500;}
+.up{color:#e8a020;}
+.down{color:#5DCAA5;}
+.fun-card{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.dist-wrap{display:flex;gap:4px;align-items:flex-end;height:36px;margin:6px 0 4px;}
+.dist-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.dist-bar{width:100%;border-radius:3px 3px 0 0;background:var(--gold);opacity:.25;}
+.dist-bar.hi{opacity:1;}
+.dist-bar.mid{opacity:.6;}
+.dist-label{font-size:9px;color:var(--muted);}
+.dist-count{font-size:9px;color:var(--text);font-weight:500;}
+.morning-compare{background:var(--cream);border-radius:8px;padding:8px 10px;margin-top:8px;}
+.mc-label{font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:500;}
+.mc-row{display:flex;justify-content:space-between;padding:2px 0;}
+.mc-l{font-size:10px;color:var(--muted);}
+.mc-v{font-size:11px;font-weight:500;color:var(--text);}
+.sub-card{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:8px;}
+.sub-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);}
+.sub-row:last-child{border-bottom:none;}
+.sub-label{font-size:10px;color:var(--muted);}
+.sub-val{font-size:11px;color:var(--text);font-weight:500;}
+.sub-pills{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}
+.s-pill{font-size:10px;color:#5a4e3f;background:var(--cream);padding:1px 6px;border-radius:6px;}
+.rank-card{background:var(--card);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:10px;}
+.rank-header{background:var(--dark);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;}
+.rank-title{color:var(--gold);font-size:12px;font-weight:500;}
+.rank-sub{color:rgba(247,242,232,0.4);font-size:10px;}
+.rank-item{padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px;}
+.rank-item:last-child{border-bottom:none;}
+.rank-num{font-size:13px;font-weight:500;color:var(--gold);width:16px;flex-shrink:0;}
+.rank-name{font-size:13px;font-weight:500;color:var(--text);flex:1;}
+.rank-score{font-size:11px;color:var(--muted);}
+.rank-locked{padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px;}
+.rank-locked:last-child{border-bottom:none;}
+.rank-blur{font-size:13px;color:var(--text);filter:blur(4px);flex:1;user-select:none;}
+.pro-pill{font-size:10px;background:#FAEEDA;color:#633806;padding:1px 7px;border-radius:8px;font-weight:500;flex-shrink:0;}
+.caution-card{background:var(--card);border-left:3px solid var(--gold);border-radius:0 12px 12px 0;padding:11px 14px;margin-bottom:10px;}
+.highlight-card{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+.hc-eyebrow{font-size:11px;font-weight:500;color:var(--gold);background:var(--gold-pale);padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:8px;}
+.hc-main{font-size:13px;font-weight:500;color:var(--text);line-height:1.5;margin-bottom:4px;}
+.hc-sub{font-size:11px;color:var(--muted);}
+.find-row{display:flex;gap:8px;margin-bottom:10px;}
+.find-half{flex:1;background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:11px 12px;}
+.fh-label{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.fh-val{font-size:15px;font-weight:500;color:var(--text);margin-bottom:1px;}
+.fh-sub{font-size:10px;color:var(--muted);}
+
+/* FRIENDS */
+.top3{display:flex;gap:8px;margin-bottom:16px;}
+.top-card{flex:1;background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:12px 10px;text-align:center;}
+.top-card.first{border-color:var(--gold);background:var(--gold-pale);}
+.top-rank{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.top-rank.gold{color:var(--gold);font-weight:500;}
+.top-avatar{width:44px;height:44px;border-radius:50%;background:var(--dark);margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--gold);}
+.top-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.top-count{font-size:10px;color:var(--muted);}
+.top-label{font-size:10px;color:#854F0B;background:var(--gold-pale);padding:1px 6px;border-radius:6px;margin-top:4px;display:inline-block;}
+.friend-item{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:11px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.fi-avatar{width:36px;height:36px;border-radius:50%;background:var(--dark);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--gold);flex-shrink:0;}
+.fi-info{flex:1;}
+.fi-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.fi-meta{font-size:11px;color:var(--muted);}
+.fi-labels{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+.fi-label{font-size:10px;color:#854F0B;background:var(--gold-pale);padding:1px 6px;border-radius:6px;border:0.5px solid var(--gold-light);}
+.fi-right{text-align:right;flex-shrink:0;}
+.fi-count{font-size:15px;font-weight:500;color:var(--gold);}
+.fi-count-label{font-size:9px;color:var(--muted);}
+.fi-share{font-size:11px;color:var(--gold);border:0.5px solid var(--gold-light);border-radius:8px;padding:3px 8px;margin-top:4px;background:transparent;cursor:pointer;white-space:nowrap;display:block;}
+
+/* FRIEND DETAIL */
+.fd-header{background:var(--dark);padding:14px 18px 20px;flex-shrink:0;}
+.fd-back{color:var(--gold);font-size:13px;margin-bottom:10px;cursor:pointer;}
+.fd-avatar{width:56px;height:56px;border-radius:50%;background:rgba(201,146,42,0.2);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;color:var(--gold);}
+.fd-name{color:var(--gold);font-size:18px;font-weight:500;text-align:center;}
+.fd-meta{color:rgba(247,242,232,0.4);font-size:11px;text-align:center;margin-top:2px;}
+.fd-scores{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border-bottom:0.5px solid var(--border);}
+.fds-item{padding:12px 6px;text-align:center;border-right:0.5px solid var(--border);}
+.fds-item:last-child{border-right:none;}
+.fds-label{font-size:9px;color:var(--muted);margin-bottom:3px;}
+.fds-val{font-size:18px;font-weight:500;color:var(--gold);}
+.line-btn{width:100%;padding:12px;border-radius:12px;background:#06C755;border:none;font-size:13px;color:#fff;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;}
+.line-preview{background:var(--cream);border-radius:12px;padding:12px 14px;margin-top:8px;}
+.lp-label{font-size:9px;color:var(--muted);margin-bottom:6px;}
+.lp-card{background:var(--card);border-radius:8px;padding:10px 12px;border:0.5px solid var(--border);}
+.lp-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px;}
+.lp-body{font-size:11px;color:var(--muted);line-height:1.6;}
+.lp-app{font-size:10px;color:var(--gold);margin-top:4px;}
+
+/* ONBOARDING */
+.ob-screen{background:var(--dark);flex:1;display:flex;flex-direction:column;padding:0;}
+.ob-body{flex:1;padding:32px 24px;display:flex;flex-direction:column;justify-content:center;}
+.ob-step{display:flex;gap:6px;margin-bottom:32px;justify-content:center;}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:rgba(201,146,42,0.3);}
+.ob-dot.act{background:var(--gold);width:20px;border-radius:3px;}
+.ob-icon{font-size:48px;text-align:center;margin-bottom:16px;}
+.ob-title{font-size:22px;font-weight:500;color:var(--gold);text-align:center;margin-bottom:12px;line-height:1.4;}
+.ob-desc{font-size:14px;color:rgba(247,242,232,0.6);text-align:center;line-height:1.8;margin-bottom:24px;}
+.ob-box{background:rgba(201,146,42,0.1);border:0.5px solid rgba(201,146,42,0.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+.ob-box-title{font-size:12px;font-weight:500;color:var(--gold);margin-bottom:8px;}
+.ob-box-item{font-size:12px;color:rgba(247,242,232,0.6);padding:3px 0;display:flex;align-items:center;gap:6px;}
+.ob-box-item::before{content:'✓';color:var(--gold);font-size:11px;}
+.ob-box-item.locked::before{content:'🔒';font-size:11px;}
+.ob-box-item.locked{color:rgba(247,242,232,0.3);}
+.ob-btn{width:100%;background:var(--gold);color:var(--dark);border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:500;cursor:pointer;margin-top:8px;}
+.ob-skip{font-size:12px;color:rgba(247,242,232,0.3);text-align:center;margin-top:12px;cursor:pointer;}
+
+/* VENUE BLOCK */
+.venue-block{background:var(--bg);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.venue-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.venue-block-label{font-size:12px;font-weight:500;color:var(--gold);}
+.venue-block-remove{font-size:11px;color:var(--muted);cursor:pointer;padding:2px 6px;border:0.5px solid var(--border);border-radius:6px;background:transparent;}
+.venue-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.venue-input{flex:1;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);}
+.venue-amount-display{background:var(--dark);border-radius:8px;padding:9px 14px;font-size:13px;color:var(--gold);font-weight:500;cursor:pointer;white-space:nowrap;}
+.add-venue-btn{width:100%;padding:10px;border-radius:10px;border:0.5px dashed var(--border);background:transparent;font-size:13px;color:var(--muted);cursor:pointer;margin-top:4px;}
+
+/* SUGGEST */
+.suggest-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.suggest-pill{font-size:12px;color:var(--muted);background:var(--cream);padding:4px 10px;border-radius:16px;border:0.5px solid var(--border);cursor:pointer;}
+
+/* ANIMATIONS */
+@keyframes tap{0%{transform:scale(1)}30%{transform:scale(.91)}70%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes tap-s{0%{transform:scale(1)}30%{transform:scale(.87)}70%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.tapped{animation:tap .18s ease-out;}
+.tapped-s{animation:tap-s .16s ease-out;}
+.fade-in{animation:fadeIn .3s ease-out;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- ═══ ONBOARDING 1 ═══ -->
+<div class="screen active" id="screen-ob1">
+<div class="status-bar"><span class="st">9:41</span><span class="si">▲ ● ■</span></div>
+<div class="ob-screen">
+<div class="ob-body">
+  <div class="ob-step">
+    <div class="ob-dot act"></div>
+    <div class="ob-dot"></div>
+    <div class="ob-dot"></div>
+  </div>
+  <div class="ob-icon">🍺</div>
+  <div class="ob-title">飲んだ夜が、全部残る。</div>
+  <div class="ob-desc">楽しさ・体調・お金・メンバーを記録して、一番楽しかった夜の共通点がわかる。はじめての、自分専用の飲み会記録。</div>
+  <button class="ob-btn" onclick="goTo('screen-ob2')">はじめる</button>
+</div>
+</div>
+</div>
+
+<!-- ═══ ONBOARDING 2 ═══ -->
+<div class="screen" id="screen-ob2">
+<div class="status-bar"><span class="st">9:41</span><span class="si">▲ ● ■</span></div>
+<div class="ob-screen">
+<div class="ob-body">
+  <div class="ob-step">
+    <div class="ob-dot"></div>
+    <div class="ob-dot act"></div>
+    <div class="ob-dot"></div>
+  </div>
+  <div class="ob-icon">💡</div>
+  <div class="ob-title">無料でできること</div>
+  <div class="ob-box">
+    <div class="ob-box-title">無料プラン</div>
+    <div class="ob-box-item">飲み会の記録（無制限）</div>
+    <div class="ob-box-item">直近3ヶ月のデータ閲覧</div>
+    <div class="ob-box-item">三人娘のコメント</div>
+    <div class="ob-box-item">今月の発見・ランキング1位</div>
+    <div class="ob-box-item locked">全期間データ（Pro）</div>
+    <div class="ob-box-item locked">深い掛け算分析（Pro）</div>
+    <div class="ob-box-item locked">深夜モード（Pro）</div>
+  </div>
+  <div class="ob-desc" style="font-size:12px;margin-bottom:0;">3ヶ月後からProプラン¥500/月で全機能が使えます。いつでも切り替えられます。</div>
+  <button class="ob-btn" onclick="goTo('screen-ob3')" style="margin-top:20px;">次へ</button>
+</div>
+</div>
+</div>
+
+<!-- ═══ ONBOARDING 3 ═══ -->
+<div class="screen" id="screen-ob3">
+<div class="status-bar"><span class="st">9:41</span><span class="si">▲ ● ■</span></div>
+<div class="ob-screen">
+<div class="ob-body">
+  <div class="ob-step">
+    <div class="ob-dot"></div>
+    <div class="ob-dot"></div>
+    <div class="ob-dot act"></div>
+  </div>
+  <div class="ob-icon">👥</div>
+  <div class="ob-title">よく飲む仲間を登録しよう</div>
+  <div class="ob-desc">データが溜まるほど「誰と飲むと楽しいか」がわかります。過去の飲み会も遡って入力できます。</div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+    <input style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(201,146,42,0.2);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--gold);" placeholder="田中さん" value="田中さん">
+    <input style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(201,146,42,0.2);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--gold);" placeholder="山田さん" value="山田さん">
+    <input style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(201,146,42,0.2);border-radius:10px;padding:12px 14px;font-size:14px;color:rgba(247,242,232,0.3);" placeholder="佐藤さん（任意）">
+    <input style="background:rgba(255,255,255,0.08);border:0.5px solid rgba(201,146,42,0.2);border-radius:10px;padding:12px 14px;font-size:14px;color:rgba(247,242,232,0.3);" placeholder="鈴木さん（任意）">
+  </div>
+  <button class="ob-btn" onclick="goTo('screen-home')">アプリをはじめる</button>
+  <div class="ob-skip" onclick="goTo('screen-home')">あとで登録する</div>
+</div>
+</div>
+</div>
+
+<!-- ═══ HOME ═══ -->
+<div class="screen" id="screen-home">
+  <div style="background:var(--dark);flex-shrink:0;">
+    <div class="status-bar"><span class="st">9:41</span><span class="si">▲ ● ■</span></div>
+    <div class="app-header">
+      <div class="app-header-top">
+        <div class="app-title-wrap">
+          <svg width="26" height="30" viewBox="0 0 26 30" fill="none">
+            <path d="M4 3L3 13Q3 20 13 20Q23 20 23 13L22 3Z" stroke="#c9922a" stroke-width="1.4" fill="none"/>
+            <line x1="13" y1="20" x2="13" y2="25" stroke="#c9922a" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="7" y1="25" x2="19" y2="25" stroke="#c9922a" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M5 9.5Q13 12 21 9.5" stroke="#c9922a" stroke-width="1" stroke-linecap="round" fill="none" opacity=".5"/>
+            <circle cx="9" cy="6.5" r="1" fill="#c9922a" opacity=".6"/>
+            <circle cx="13" cy="5.5" r="1.2" fill="#c9922a" opacity=".7"/>
+            <circle cx="17" cy="6.5" r="0.9" fill="#c9922a" opacity=".5"/>
+          </svg>
+          <div class="app-name">飲み会ログ</div>
+        </div>
+        <div class="header-date">2025年3月</div>
+      </div>
+      <div class="header-sub">今月 8回 ・ ¥42,000 ・ 翌朝 ★3.8</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="incomplete-banner">
+      <div class="incomplete-left">
+        <div class="incomplete-dot"></div>
+        <div>
+          <div class="incomplete-text">昨夜の翌朝記録がまだです</div>
+          <div class="incomplete-label">3/21（金）居酒屋・田中さんほか</div>
+        </div>
+      </div>
+      <button class="incomplete-btn" onclick="goTo('screen-morning')">入力する</button>
+    </div>
+    <button class="record-btn" onclick="goTo('screen-night')">
+      <div style="width:20px;height:20px;border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;"><span style="color:var(--gold);font-size:16px;line-height:1;">+</span></div>
+      新たに飲み会を記録する
+    </button>
+    <div class="section-label">今月の気づき</div>
+    <div class="insight-card">
+      <div class="insight-eyebrow">いつもと違った夜</div>
+      <div class="insight-main">月曜なのに楽しさ5点。あなたらしくない夜でした。</div>
+      <div class="insight-sub">3/17（月）バー・山田さんと2人 ¥8,200</div>
+    </div>
+    <div class="insight-row">
+      <div class="insight-half">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">今月いちばん</div>
+        <div style="font-size:18px;font-weight:500;color:var(--text);">田中さん</div>
+        <div style="font-size:11px;color:var(--muted);">と飲むと</div>
+        <div class="star-wrap"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">楽しさ +1.4点</div>
+      </div>
+      <div class="insight-half">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">コスパ最強</div>
+        <div style="font-size:18px;font-weight:500;color:var(--text);">¥3,200</div>
+        <div style="font-size:11px;color:var(--muted);">で楽しさ5点</div>
+        <div class="star-wrap"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">3/14（金）居酒屋</div>
+      </div>
+    </div>
+    <div class="insight-card" style="border-left:3px solid var(--gold);border-radius:0 14px 14px 0;">
+      <div style="font-size:11px;font-weight:500;color:var(--muted);margin-bottom:6px;">ちょっと気になる</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.6;">水曜の翌朝は他の曜日より体調がやや辛い傾向があります</div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="tap(this)">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="#c9922a" stroke-width="1.5"/><path d="M5 10h10M5 13h6" stroke="#c9922a" stroke-width="1" stroke-linecap="round"/></svg>
+      <div class="nav-label active">ホーム</div>
+    </div>
+    <div class="nav-item" onclick="goTo('screen-list')">
+      <div class="nav-badge"></div>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="14" rx="2" stroke="var(--muted)" stroke-width="1.5"/><line x1="6" y1="2" x2="6" y2="6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/><line x1="14" y1="2" x2="14" y2="6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="11" x2="15" y2="11" stroke="var(--muted)" stroke-width="1" stroke-linecap="round"/><line x1="5" y1="14" x2="11" y2="14" stroke="var(--muted)" stroke-width="1" stroke-linecap="round"/></svg>
+      <div class="nav-label">記録</div>
+    </div>
+    <div class="nav-item" onclick="goTo('screen-kioku')">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="var(--muted)" stroke-width="1.5"/><line x1="6" y1="8" x2="14" y2="8" stroke="var(--muted)" stroke-width="1" stroke-linecap="round"/><line x1="6" y1="11" x2="12" y2="11" stroke="var(--muted)" stroke-width="1" stroke-linecap="round"/></svg>
+      <div class="nav-label">きおく</div>
+    </div>
+    <div class="nav-item" onclick="goTo('screen-friends')">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="var(--muted)" stroke-width="1.5"/><path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="nav-label">仲間</div>
+    </div>
+    <div class="nav-item" onclick="tap(this)">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><line x1="3" y1="6" x2="17" y2="6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="10" x2="17" y2="10" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="14" x2="11" y2="14" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="nav-label">設定</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 飲んだ夜 ═══ -->
+<div class="screen" id="screen-night">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">22:14</span><span class="si">▲ ● ■</span></div>
+  <div class="nav-header" style="flex-shrink:0;">
+    <span class="nav-back" onclick="goTo('screen-home')">‹ ホーム</span>
+    <span class="nav-title">飲んだ夜</span>
+    <span class="nav-action" onclick="goTo('screen-half')">保存</span>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-title">3月21日（金）</div>
+        <div class="card-header-sub">記録中</div>
+      </div>
+      <div class="card-body">
+
+        <!-- 必須3項目 -->
+        <div style="font-size:10px;color:var(--gold);background:var(--gold-pale);padding:4px 10px;border-radius:8px;display:inline-block;margin-bottom:12px;">必須項目</div>
+
+        <div class="field">
+          <div class="field-label">今夜の楽しさ</div>
+          <div class="score-wrap">
+            <div class="score-btn" onclick="toggleScore(this,'fun')">1</div>
+            <div class="score-btn" onclick="toggleScore(this,'fun')">2</div>
+            <div class="score-btn" onclick="toggleScore(this,'fun')">3</div>
+            <div class="score-btn sel" onclick="toggleScore(this,'fun')">4</div>
+            <div class="score-btn" onclick="toggleScore(this,'fun')">5</div>
+          </div>
+          <div class="score-hint"><span>1 つまらない</span><span>5 最高 🎉</span></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">場所</div>
+          <input class="venue-input" type="text" placeholder="駅名・エリア（例：新橋）" value="新橋" style="width:100%;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);">
+          <div class="suggest-row">
+            <div class="suggest-pill" onclick="tap(this)">新橋</div>
+            <div class="suggest-pill" onclick="tap(this)">銀座</div>
+            <div class="suggest-pill" onclick="tap(this)">渋谷</div>
+            <div class="suggest-pill" onclick="tap(this)">新宿</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">一緒に飲んだ人</div>
+          <div class="member-wrap">
+            <div class="member-chip"><span class="member-name">田中さん</span></div>
+            <div class="member-chip"><span class="member-name">山田さん</span></div>
+            <div class="member-add" onclick="tap(this)">+ 追加</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <div class="member-special" onclick="tap(this)">ひとりでしっぽり</div>
+            <div class="member-special" onclick="tap(this)">匿名</div>
+            <div class="member-special" onclick="tap(this)">その他 人数</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div style="font-size:10px;color:var(--muted);background:var(--cream);padding:4px 10px;border-radius:8px;display:inline-block;margin-bottom:12px;">任意項目（後から追記できます）</div>
+
+        <div class="field">
+          <div class="field-label">飲み会のタイプ</div>
+          <div class="chip-wrap">
+            <div class="chip sel" onclick="toggleChip(this,'type')">社内</div>
+            <div class="chip" onclick="toggleChip(this,'type')">接待</div>
+            <div class="chip" onclick="toggleChip(this,'type')">友人</div>
+            <div class="chip" onclick="toggleChip(this,'type')">混合</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">気遣い度</div>
+          <div class="chip-wrap">
+            <div class="chip sel" onclick="toggleChip(this,'care')">リラックス</div>
+            <div class="chip" onclick="toggleChip(this,'care')">まあまあ</div>
+            <div class="chip" onclick="toggleChip(this,'care')">気を遣った</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">場所・金額</div>
+          <div id="venue-blocks">
+            <div class="venue-block">
+              <div class="venue-block-header">
+                <div class="venue-block-label">1軒目</div>
+              </div>
+              <div class="venue-row">
+                <input class="venue-input" type="text" placeholder="駅名・エリア" value="新橋">
+                <div class="venue-amount-display" onclick="goTo('screen-amount')">¥5,000 ›</div>
+              </div>
+              <div class="chip-wrap">
+                <div class="chip sel" onclick="toggleChip(this,'v1')">居酒屋</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">バー</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">焼肉</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">寿司</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">和食</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">中華</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">もんじゃ/お好み焼き</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">フレンチ</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">イタリアン</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">カラオケ</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">スナック</div>
+                <div class="chip" onclick="toggleChip(this,'v1')">その他</div>
+              </div>
+            </div>
+            <div class="venue-block" id="venue-2" style="display:none;">
+              <div class="venue-block-header">
+                <div class="venue-block-label">2軒目</div>
+                <button class="venue-block-remove" onclick="removeVenue()">削除</button>
+              </div>
+              <div class="venue-row">
+                <input class="venue-input" type="text" placeholder="駅名・エリア">
+                <div class="venue-amount-display">¥— ›</div>
+              </div>
+              <div class="chip-wrap">
+                <div class="chip" onclick="toggleChip(this,'v2')">居酒屋</div>
+                <div class="chip" onclick="toggleChip(this,'v2')">バー</div>
+                <div class="chip" onclick="toggleChip(this,'v2')">焼肉</div>
+                <div class="chip" onclick="toggleChip(this,'v2')">カラオケ</div>
+                <div class="chip" onclick="toggleChip(this,'v2')">スナック</div>
+                <div class="chip" onclick="toggleChip(this,'v2')">その他</div>
+              </div>
+            </div>
+          </div>
+          <button class="add-venue-btn" id="add-venue-btn" onclick="addVenue()">＋ 2軒目を追加する</button>
+        </div>
+
+        <div class="field">
+          <div class="field-label">飲んだ量</div>
+          <div class="chip-wrap">
+            <div class="chip" onclick="toggleChip(this,'drink')">少なめ</div>
+            <div class="chip sel" onclick="toggleChip(this,'drink')">ほどほど</div>
+            <div class="chip" onclick="toggleChip(this,'drink')">飲みすぎた</div>
+            <div class="chip" onclick="toggleChip(this,'drink')">飲みすぎて記憶なし 💀</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">開始・終了時間（任意）</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="time" value="19:30" style="flex:1;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);">
+            <span style="font-size:13px;color:var(--muted);">〜</span>
+            <input type="time" value="23:45" style="flex:1;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">メモ（任意）</div>
+          <textarea placeholder="田中さんの送別会だった" style="width:100%;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);height:72px;resize:none;"></textarea>
+        </div>
+
+      </div>
+    </div>
+    <button class="primary-btn" onclick="goTo('screen-half')">保存して三人娘のコメントを見る</button>
+  </div>
+</div>
+
+<!-- ═══ 金額入力 ═══ -->
+<div class="screen" id="screen-amount">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">22:16</span><span class="si">▲ ● ■</span></div>
+  <div class="nav-header" style="flex-shrink:0;">
+    <span class="nav-back" onclick="goTo('screen-night')">‹ 戻る</span>
+    <span class="nav-title">金額</span>
+    <span class="nav-action" onclick="confirmAmount()">決定</span>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-title">今夜いくら使いましたか？</div>
+        <div class="card-header-sub" id="hval">¥5,000</div>
+      </div>
+      <div class="card-body">
+        <div class="quick-grid">
+          <div class="q-btn ogori" id="q0" onclick="pick(0,this)">おごり<br>¥0</div>
+          <div class="q-btn" id="q2000" onclick="pick(2000,this)">¥2,000</div>
+          <div class="q-btn" id="q3000" onclick="pick(3000,this)">¥3,000</div>
+          <div class="q-btn" id="q4000" onclick="pick(4000,this)">¥4,000</div>
+          <div class="q-btn sel" id="q5000" onclick="pick(5000,this)">¥5,000</div>
+          <div class="q-btn" id="q6000" onclick="pick(6000,this)">¥6,000</div>
+          <div class="q-btn" id="q8000" onclick="pick(8000,this)">¥8,000</div>
+          <div class="q-btn" id="q10000" onclick="pick(10000,this)">¥10,000</div>
+          <div class="q-btn" id="q15000" onclick="pick(15000,this)">¥15,000</div>
+          <div class="q-btn" id="q20000" onclick="pick(20000,this)">¥20,000</div>
+          <div class="q-btn other" id="qother" onclick="pick('other',this)">それ以上</div>
+        </div>
+        <div class="adjust-row" id="adjust-row">
+          <button class="adj-btn" id="btn-minus" onclick="adjust(-1000,this)">－</button>
+          <div class="adj-divider"></div>
+          <div class="adj-center">
+            <div class="adj-amount" id="adj-amount">¥5,000</div>
+            <div class="adj-unit">±1,000円で調整</div>
+          </div>
+          <div class="adj-divider"></div>
+          <button class="adj-btn" id="btn-plus" onclick="adjust(1000,this)">＋</button>
+        </div>
+        <div class="ogori-note" id="ogori-note">今夜はおごってもらいましたね。仲間の記録に残しておきましょう。</div>
+        <div class="manual-wrap" id="manual-wrap">
+          <div class="manual-label">金額を直接入力してください</div>
+          <div class="manual-input-row">
+            <span class="yen-sign">¥</span>
+            <input class="manual-input" type="number" id="manual-input" placeholder="21,000以上" oninput="onManual(this.value)">
+          </div>
+        </div>
+        <div class="amount-result-row">
+          <div style="font-size:12px;color:var(--muted);">今夜の支出</div>
+          <div>
+            <div style="font-size:20px;font-weight:500;color:var(--text);" id="rval">¥5,000</div>
+            <div style="font-size:11px;color:var(--muted);text-align:right;" id="rsub">今月 8回目 / 合計 ¥42,000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 飲みカード（半完成） ═══ -->
+<div class="screen" id="screen-half">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">22:31</span><span class="si">▲ ● ■</span></div>
+  <div class="nav-header" style="flex-shrink:0;">
+    <span class="nav-back" onclick="goTo('screen-home')">‹ ホーム</span>
+    <span class="nav-title">飲みカード</span>
+    <span class="half-badge">翌朝未記録</span>
+  </div>
+  <div class="body">
+    <div class="drink-card">
+      <div class="dc-header">
+        <div class="dc-date">3月21日（金）</div>
+        <div class="dc-type">社内</div>
+      </div>
+      <div class="dc-scores">
+        <div class="dc-score"><div class="dc-s-label">合計金額</div><div class="dc-s-val" style="font-size:15px;">¥5,000</div><div class="dc-s-sub">今月 ¥42,000</div></div>
+        <div class="dc-score"><div class="dc-s-label">軒数</div><div class="dc-s-val">1<span class="dc-s-unit">軒</span></div></div>
+        <div class="dc-score"><div class="dc-s-label">楽しさ</div><div class="dc-s-val">4<span class="dc-s-unit">/5</span></div></div>
+      </div>
+      <div class="dc-time">
+        <div class="dc-t-row"><div class="dc-t-label">時間</div><div class="dc-t-val">19:30</div><div class="dc-t-arrow">→</div><div class="dc-t-val">23:45</div></div>
+        <div class="dc-t-dur">4時間15分</div>
+      </div>
+      <div class="dc-venues"><div class="dc-vp">新橋・居酒屋</div></div>
+      <div class="dc-members">
+        <div class="dc-m-label">一緒に</div>
+        <div class="dc-avatars"><div class="dc-avatar">田中さん</div><div class="dc-avatar">山田さん</div></div>
+      </div>
+      <div class="dc-morning-pending">
+        <div class="dc-mp-text">あの3人も待ってます</div>
+        <button class="dc-mp-btn" onclick="goTo('screen-morning')">翌朝を記録する</button>
+      </div>
+    </div>
+    <div class="waiting-text">あの3人も待ってます ☀️</div>
+    <div class="comment-card">
+      <div class="c-row"><div class="c-avatar">🍺</div><div><div class="c-name">みお · スタンダード</div><div class="c-text">「楽しさ4点！居酒屋で4時間以上！すごい夜でしたね。翌朝の体調もちゃんと記録してくださいね！」</div></div></div>
+    </div>
+    <div class="comment-card">
+      <div class="c-row"><div class="c-avatar">🍷</div><div><div class="c-name">奈緒 · スタンダード</div><div class="c-text">「楽しさ4点、¥5,000、4時間15分。データとして残りました。翌朝も記録してください。」</div></div></div>
+    </div>
+    <div class="comment-card">
+      <div class="c-row"><div class="c-avatar">🥂</div><div><div class="c-name">梨花 · スタンダード</div><div class="c-text">「4時間以上ね。楽しい夜は時間が早いものよ。翌朝の体調も教えてもらえる？」</div></div></div>
+    </div>
+    <button class="night-btn" onclick="tap(this)">✦ 3人と、もう少し夜を</button>
+  </div>
+</div>
+
+<!-- ═══ 明けた朝 ═══ -->
+<div class="screen" id="screen-morning">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">7:08</span><span class="si">▲ ● ■</span></div>
+  <div class="nav-header" style="flex-shrink:0;">
+    <span class="nav-back" onclick="goTo('screen-home')">‹ ホーム</span>
+    <span class="nav-title">明けた朝</span>
+    <span class="nav-action" onclick="goTo('screen-done')">完成</span>
+  </div>
+  <div class="body">
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-header">
+        <div class="card-header-title">3月21日（金）の続き</div>
+        <div class="card-header-sub">昨夜の記録</div>
+      </div>
+      <div class="card-body" style="padding:10px 16px;">
+        <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+        <div class="progress-label"><span>夜の記録 完了</span><span>翌朝を記録して完成</span></div>
+        <div style="height:8px;"></div>
+        <div class="field-row"><span class="field-row-label">場所</span><span class="field-row-val">新橋・居酒屋</span></div>
+        <div class="field-row"><span class="field-row-label">楽しさ</span><span class="field-row-val" style="color:var(--gold);">4 / 5</span></div>
+        <div class="field-row" style="border:none;"><span class="field-row-label">飲んだ量</span><span class="field-row-val">ほどほど</span></div>
+      </div>
+    </div>
+    <div class="morning-card">
+      <div class="morning-header">
+        <div class="morning-title">今朝の体調は？</div>
+        <div class="morning-badge">あと1項目で完成</div>
+      </div>
+      <div class="card-body">
+        <div class="cond-wrap">
+          <div class="cond-item"><div class="cond-btn" onclick="selectCond(this)">💀</div><div class="cond-label">最悪</div></div>
+          <div class="cond-item"><div class="cond-btn" onclick="selectCond(this)">😞</div><div class="cond-label">辛い</div></div>
+          <div class="cond-item"><div class="cond-btn sel" onclick="selectCond(this)">😐</div><div class="cond-label">まあまあ</div></div>
+          <div class="cond-item"><div class="cond-btn" onclick="selectCond(this)">😊</div><div class="cond-label">良い</div></div>
+          <div class="cond-item"><div class="cond-btn" onclick="selectCond(this)">😄</div><div class="cond-label">最高</div></div>
+        </div>
+      </div>
+    </div>
+    <button class="primary-btn" onclick="goTo('screen-done')">カードを完成させる</button>
+  </div>
+</div>
+
+<!-- ═══ 飲みカード（完成） ═══ -->
+<div class="screen" id="screen-done">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">7:09</span><span class="si">▲ ● ■</span></div>
+  <div class="nav-header" style="flex-shrink:0;">
+    <span class="nav-back" onclick="goTo('screen-home')">‹ ホーム</span>
+    <span class="nav-title">飲みカード</span>
+    <span style="font-size:18px;">🍺</span>
+  </div>
+  <div class="body">
+    <div class="complete-banner">
+      <div class="complete-icon"><svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      <div class="complete-text">カードが完成しました</div>
+    </div>
+    <div class="drink-card">
+      <div class="dc-header">
+        <div class="dc-date">3月21日（金）</div>
+        <div class="dc-type">社内</div>
+      </div>
+      <div class="dc-scores">
+        <div class="dc-score"><div class="dc-s-label">合計金額</div><div class="dc-s-val" style="font-size:15px;">¥5,000</div><div class="dc-s-sub">今月 ¥42,000</div></div>
+        <div class="dc-score"><div class="dc-s-label">軒数</div><div class="dc-s-val">1<span class="dc-s-unit">軒</span></div></div>
+        <div class="dc-score"><div class="dc-s-label">翌朝</div><div class="dc-s-val" style="font-size:20px;">😐</div></div>
+      </div>
+      <div class="dc-time">
+        <div class="dc-t-row"><div class="dc-t-label">時間</div><div class="dc-t-val">19:30</div><div class="dc-t-arrow">→</div><div class="dc-t-val">23:45</div></div>
+        <div class="dc-t-dur">4時間15分</div>
+      </div>
+      <div class="dc-venues"><div class="dc-vp">新橋・居酒屋</div></div>
+      <div class="dc-members">
+        <div class="dc-m-label">一緒に</div>
+        <div class="dc-avatars"><div class="dc-avatar">田中さん</div><div class="dc-avatar">山田さん</div></div>
+      </div>
+      <div class="dc-memo">
+        <div class="dc-memo-label">メモ</div>
+        <div class="dc-memo-text">田中さんの送別会。最後のスナックで盛り上がりすぎた。</div>
+      </div>
+      <div class="dc-morning-done">
+        <div style="font-size:10px;color:var(--muted);">翌朝コンディション</div>
+        <div style="font-size:14px;color:var(--text);font-weight:500;">😐 まあまあ</div>
+      </div>
+    </div>
+    <div class="comment-card">
+      <div class="c-row"><div class="c-avatar">🍺</div><div><div class="c-name">みお · 飲んだ夜</div><div class="c-text">「田中さんの送別会！4時間以上も！楽しさ4点、すごい夜でしたね！」</div></div></div>
+    </div>
+    <div class="comment-card">
+      <div class="c-row"><div class="c-avatar">🍷</div><div><div class="c-name">奈緒 · 飲んだ夜</div><div class="c-text">「送別会で4時間、¥5,000。データより思い出の方が大事な夜もありますね。」</div></div></div>
+    </div>
+    <div class="comment-card">
+      <div class="c-row"><div class="c-avatar">🥂</div><div><div class="c-name">梨花 · 飲んだ夜</div><div class="c-text">「田中さんとの夜が、ここに残ったわ。大切にしてね。」</div></div></div>
+    </div>
+    <div class="section-divider"><div class="sd-line"></div><div class="sd-label">☀️ 明けた朝</div><div class="sd-line"></div></div>
+    <div class="comment-card fade-in">
+      <div class="c-row"><div class="c-avatar">🍺</div><div><div class="c-name">みお · 明けた朝</div><div class="c-text">「翌朝まあまあ！送別会で4時間でもそれだけ元気なら、田中さんも喜んでますよ！」</div></div></div>
+    </div>
+    <div class="comment-card fade-in">
+      <div class="c-row"><div class="c-avatar">🍷</div><div><div class="c-name">奈緒 · 明けた朝</div><div class="c-text">「ほどほどで翌朝まあまあ。送別会翌朝にしては上出来なデータです。」</div></div></div>
+    </div>
+    <div class="comment-card fade-in">
+      <div class="c-row"><div class="c-avatar">🥂</div><div><div class="c-name">梨花 · 明けた朝</div><div class="c-text">「翌朝も教えてくれてありがとう。田中さんへの思い出が、完成したわ。」</div></div></div>
+    </div>
+    <button class="night-btn" onclick="tap(this)">✦ 3人と、もう少し夜を</button>
+  </div>
+</div>
+
+<!-- ═══ 記録一覧 ═══ -->
+<div class="screen" id="screen-list">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">20:14</span><span class="si">▲ ● ■</span></div>
+  <div style="background:var(--dark);padding:12px 18px 16px;flex-shrink:0;">
+    <div style="color:var(--gold);font-size:17px;font-weight:500;margin-bottom:2px;">記録</div>
+    <div style="color:rgba(247,242,232,0.45);font-size:11px;">2025年3月 · 8回 · ¥42,000</div>
+  </div>
+  <div class="body" style="padding:0;">
+    <div class="month-bar"><div class="month-label">3月</div><div class="month-count">8回 · ¥42,000</div></div>
+    <div class="list-item incomplete" onclick="goTo('screen-detail')">
+      <div class="date-col"><div class="date-day" style="color:var(--gold);">21</div><div class="date-dow" style="color:var(--gold);">金</div></div>
+      <div class="list-content">
+        <div class="list-row1">
+          <div class="list-place">新橋・銀座<span class="incomplete-badge">翌朝未記録</span></div>
+          <div class="list-amount">¥12,000</div>
+        </div>
+        <div class="list-row2"><div class="ken-badge">3軒</div><div class="store-flow">居酒屋 → バー → スナック</div></div>
+        <div class="list-row3">
+          <div class="list-members"><div class="l-avatar">田中さん</div><div class="l-avatar">山田さん</div><div class="l-avatar">佐藤さん</div><div class="l-more">+2人</div></div>
+          <div class="list-scores"><div class="score-item"><div class="score-item-label">楽</div><div class="score-item-num">4</div></div><div class="score-sep"></div><div class="no-morning" style="font-size:10px;color:#c9b090;">翌朝 —</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="list-item" onclick="goTo('screen-detail')">
+      <div class="date-col"><div class="date-day">17</div><div class="date-dow">月</div></div>
+      <div class="list-content">
+        <div class="list-row1"><div class="list-place">渋谷</div><div class="list-amount">¥8,200</div></div>
+        <div class="list-row2"><div class="ken-badge">1軒</div><div class="store-flow">バー</div></div>
+        <div class="list-row3">
+          <div class="list-members"><div class="l-avatar">山田さん</div></div>
+          <div class="list-scores"><div class="score-item"><div class="score-item-label">楽</div><div class="score-item-num">5</div></div><div class="score-sep"></div><div class="score-item"><div class="score-item-label">翌</div><div class="score-item-emoji">😄</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="list-item" onclick="goTo('screen-detail')">
+      <div class="date-col"><div class="date-day">14</div><div class="date-dow">金</div></div>
+      <div class="list-content">
+        <div class="list-row1"><div class="list-place">新橋</div><div class="list-amount">¥5,000</div></div>
+        <div class="list-row2"><div class="ken-badge">2軒</div><div class="store-flow">居酒屋 → カラオケ</div></div>
+        <div class="list-row3">
+          <div class="list-members"><div class="l-avatar">田中さん</div><div class="l-avatar">鈴木さん</div><div class="l-avatar">木村さん</div></div>
+          <div class="list-scores"><div class="score-item"><div class="score-item-label">楽</div><div class="score-item-num">3</div></div><div class="score-sep"></div><div class="score-item"><div class="score-item-label">翌</div><div class="score-item-emoji">😞</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="month-bar"><div class="month-label">2月</div><div class="month-count">6回 · ¥31,000</div></div>
+    <div class="list-item" onclick="goTo('screen-detail')">
+      <div class="date-col"><div class="date-day">28</div><div class="date-dow">金</div></div>
+      <div class="list-content">
+        <div class="list-row1"><div class="list-place">新宿</div><div class="list-amount">¥6,500</div></div>
+        <div class="list-row2"><div class="ken-badge">1軒</div><div class="store-flow">焼肉</div></div>
+        <div class="list-row3">
+          <div class="list-members"><div class="l-avatar">佐藤さん</div><div class="l-avatar">木村さん</div><div class="l-avatar">中村さん</div><div class="l-avatar">高橋さん</div><div class="l-avatar">渡辺さん</div><div class="l-more">+3人</div></div>
+          <div class="list-scores"><div class="score-item"><div class="score-item-label">楽</div><div class="score-item-num">4</div></div><div class="score-sep"></div><div class="score-item"><div class="score-item-label">翌</div><div class="score-item-emoji">😊</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="var(--muted)" stroke-width="1.5"/></svg><div class="nav-label">ホーム</div></div>
+    <div class="nav-item" onclick="tap(this)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="14" rx="2" stroke="#c9922a" stroke-width="1.5"/></svg><div class="nav-label active">記録</div></div>
+    <div class="nav-item" onclick="goTo('screen-kioku')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="var(--muted)" stroke-width="1.5"/></svg><div class="nav-label">きおく</div></div>
+    <div class="nav-item" onclick="goTo('screen-friends')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="var(--muted)" stroke-width="1.5"/><path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg><div class="nav-label">仲間</div></div>
+    <div class="nav-item" onclick="tap(this)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><line x1="3" y1="6" x2="17" y2="6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg><div class="nav-label">設定</div></div>
+  </div>
+</div>
+
+<!-- ═══ 後日閲覧カード ═══ -->
+<div class="screen" id="screen-detail">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">14:22</span><span class="si">▲ ● ■</span></div>
+  <div class="nav-header" style="flex-shrink:0;">
+    <span class="nav-back" onclick="goTo('screen-list')">‹ 記録</span>
+    <span class="nav-title">3月21日（金）</span>
+    <span class="nav-action">編集</span>
+  </div>
+  <div class="body">
+    <div class="drink-card">
+      <div class="dc-header">
+        <div>
+          <div style="color:rgba(247,242,232,0.5);font-size:11px;margin-bottom:4px;">2025年3月21日（金）· 今月8回目</div>
+          <div style="font-size:16px;font-weight:500;color:var(--gold);">田中さん・山田さんと</div>
+          <div style="font-size:11px;color:rgba(247,242,232,0.35);margin-top:2px;">他3人 · 計5人</div>
+          <div style="display:flex;gap:5px;margin-top:8px;">
+            <div class="dc-avatar">田中さん</div>
+            <div class="dc-avatar">山田さん</div>
+            <div class="dc-avatar">佐藤さん</div>
+            <div class="dc-avatar">鈴木さん</div>
+          </div>
+        </div>
+        <div class="dc-type">社内</div>
+      </div>
+      <div class="dc-scores">
+        <div class="dc-score"><div class="dc-s-label">楽しさ</div><div class="dc-s-val">4<span class="dc-s-unit">/5</span></div></div>
+        <div class="dc-score"><div class="dc-s-label">合計金額</div><div class="dc-s-val" style="font-size:14px;">¥12,000</div></div>
+        <div class="dc-score"><div class="dc-s-label">翌朝</div><div class="dc-s-val" style="font-size:20px;">😐</div></div>
+      </div>
+      <div class="dc-time">
+        <div class="dc-t-row"><div class="dc-t-label">時間</div><div class="dc-t-val">19:30</div><div class="dc-t-arrow">→</div><div class="dc-t-val">23:45</div></div>
+        <div class="dc-t-dur">4時間15分</div>
+      </div>
+      <div class="dc-venues"><div class="dc-vp">新橋・居酒屋</div><div class="dc-va">→</div><div class="dc-vp">銀座・バー</div><div class="dc-va">→</div><div class="dc-vp">スナック</div></div>
+      <div style="padding:9px 15px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;">
+        <div class="dc-vp">社内</div><div class="dc-vp">3軒</div><div class="dc-vp">ほどほど</div>
+      </div>
+      <div class="dc-memo">
+        <div class="dc-memo-label">メモ</div>
+        <div class="dc-memo-text">田中さんの送別会。最後のスナックで盛り上がりすぎた。</div>
+      </div>
+    </div>
+    <div class="comment-card"><div class="c-row"><div class="c-avatar">🍺</div><div><div class="c-name">みお · 飲んだ夜</div><div class="c-text">「送別会！田中さんとの最後の夜、4点じゃ足りないくらいじゃないですか？」</div></div></div></div>
+    <div class="comment-card"><div class="c-row"><div class="c-avatar">🍷</div><div><div class="c-name">奈緒 · 飲んだ夜</div><div class="c-text">「送別会で3軒、¥12,000。データより思い出の方が大事な夜もありますね。」</div></div></div></div>
+    <div class="comment-card"><div class="c-row"><div class="c-avatar">🥂</div><div><div class="c-name">梨花 · 飲んだ夜</div><div class="c-text">「田中さんとの夜が、ここに残ったわ。大切にしてね。」</div></div></div></div>
+    <div class="section-divider"><div class="sd-line"></div><div class="sd-label">☀️ 明けた朝</div><div class="sd-line"></div></div>
+    <div class="comment-card"><div class="c-row"><div class="c-avatar">🍺</div><div><div class="c-name">みお · 明けた朝</div><div class="c-text">「翌朝まあまあ！送別会で3軒でもそれだけ元気なら、田中さんも喜んでますよ！」</div></div></div></div>
+    <div class="comment-card"><div class="c-row"><div class="c-avatar">🍷</div><div><div class="c-name">奈緒 · 明けた朝</div><div class="c-text">「ほどほどで翌朝まあまあ。あなたの適正量が見えてきました。」</div></div></div></div>
+    <div class="comment-card"><div class="c-row"><div class="c-avatar">🥂</div><div><div class="c-name">梨花 · 明けた朝</div><div class="c-text">「翌朝も教えてくれてありがとう。田中さんへの思い出が、完成したわ。」</div></div></div></div>
+    <button class="night-btn" onclick="tap(this)">✦ 3人と、もう少し夜を</button>
+  </div>
+</div>
+
+<!-- ═══ きおく ═══ -->
+<div class="screen" id="screen-kioku">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">20:14</span><span class="si">▲ ● ■</span></div>
+  <div class="kioku-header">
+    <div class="kh-title">きおく</div>
+    <div class="kh-sub">2025年3月 · 記録12回</div>
+    <div class="kioku-tab-bar">
+      <div class="kioku-tab act" id="kt-matome" onclick="switchKioku('matome')">
+        <div class="kt-label">まとめ</div>
+        <div class="kt-sub">数字で振り返る</div>
+      </div>
+      <div class="kioku-tab" id="kt-hakken" onclick="switchKioku('hakken')">
+        <div class="kt-label">気づき</div>
+        <div class="kt-sub">発見とランキング</div>
+      </div>
+    </div>
+  </div>
+  <div class="body" id="kb-matome">
+    <div class="big-row">
+      <div class="big-card"><div class="bc-label">飲み会</div><div class="bc-val">12<span class="bc-unit">回</span></div><div class="bc-diff up">↑ 先月+2回</div></div>
+      <div class="big-card"><div class="bc-label">合計金額</div><div class="bc-val" style="font-size:17px;">¥58,000</div><div class="bc-diff down">↓ 先月-¥3,000</div></div>
+    </div>
+    <div class="fun-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">平均楽しさ</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <div style="font-size:22px;font-weight:500;color:var(--text);">3.8</div>
+            <div style="font-size:11px;color:var(--muted);">/5</div>
+            <div class="up" style="font-size:10px;font-weight:500;margin-left:4px;">↑ +0.3</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:2px;">一番楽しい曜日</div>
+          <div style="font-size:13px;font-weight:500;color:var(--text);">金曜</div>
+          <div style="font-size:10px;color:var(--muted);">平均 4.2点</div>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin:8px 0 3px;">楽しさ分布</div>
+      <div class="dist-wrap">
+        <div class="dist-bar-wrap"><div class="dist-count">1</div><div class="dist-bar" style="height:6px;"></div><div class="dist-label">1</div></div>
+        <div class="dist-bar-wrap"><div class="dist-count">1</div><div class="dist-bar" style="height:6px;"></div><div class="dist-label">2</div></div>
+        <div class="dist-bar-wrap"><div class="dist-count">3</div><div class="dist-bar mid" style="height:18px;"></div><div class="dist-label">3</div></div>
+        <div class="dist-bar-wrap"><div class="dist-count">4</div><div class="dist-bar hi" style="height:28px;"></div><div class="dist-label">4</div></div>
+        <div class="dist-bar-wrap"><div class="dist-count">3</div><div class="dist-bar mid" style="height:18px;"></div><div class="dist-label">5</div></div>
+      </div>
+    </div>
+    <div class="fun-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:9px;color:var(--muted);margin-bottom:3px;">翌朝コンディション</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="font-size:22px;">😐</div>
+            <div style="font-size:18px;font-weight:500;color:var(--text);">3.1<span style="font-size:9px;color:var(--muted);">/5</span></div>
+            <div style="font-size:10px;color:var(--muted);">→ 先月と同じ</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:var(--muted);">💀 <span style="font-weight:500;color:var(--text);">2回</span></div>
+          <div style="font-size:10px;color:var(--muted);">😄 <span style="font-weight:500;color:var(--text);">3回</span></div>
+        </div>
+      </div>
+      <div class="morning-compare">
+        <div class="mc-label">飲み方別の翌朝</div>
+        <div class="mc-row"><div class="mc-l">ほどほど</div><div class="mc-v">😊 3.8点</div></div>
+        <div class="mc-row"><div class="mc-l">飲みすぎた</div><div class="mc-v">😞 2.1点</div></div>
+        <div class="mc-row"><div class="mc-l">記憶なし</div><div class="mc-v">💀 1.2点</div></div>
+      </div>
+    </div>
+    <div class="sub-card">
+      <div class="sub-row"><div class="sub-label">よく行ったエリア</div><div class="sub-pills"><div class="s-pill">新橋</div><div class="s-pill">銀座</div></div></div>
+      <div class="sub-row"><div class="sub-label">よく行ったお店</div><div class="sub-pills"><div class="s-pill">居酒屋</div><div class="s-pill">バー</div></div></div>
+      <div class="sub-row"><div class="sub-label">総軒数</div><div class="sub-val">28軒</div></div>
+      <div class="sub-row"><div class="sub-label">タクシー帰り</div><div class="sub-val">4回</div></div>
+      <div class="sub-row"><div class="sub-label">平均人数 / 最高</div><div class="sub-val">3.2人 / 最高8人</div></div>
+      <div class="sub-row"><div class="sub-label">平均終了時間</div><div class="sub-val">23:12</div></div>
+      <div class="sub-row"><div class="sub-label">最長の夜</div><div class="sub-val">5時間40分（3/7）</div></div>
+    </div>
+  </div>
+  <div class="body" id="kb-hakken" style="display:none;">
+    <div class="highlight-card">
+      <div class="hc-eyebrow">いつもと違った夜</div>
+      <div class="hc-main">月曜なのに楽しさ5点。あなたらしくない夜でした。</div>
+      <div class="hc-sub">3/17（月）バー・山田さんと2人 ¥8,200</div>
+    </div>
+    <div class="find-row">
+      <div class="find-half">
+        <div class="fh-label">今月いちばん</div>
+        <div class="fh-val">田中さん</div>
+        <div class="fh-sub">と飲むと</div>
+        <div class="star-wrap"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;">楽しさ +1.4点</div>
+      </div>
+      <div class="find-half">
+        <div class="fh-label">コスパ最強</div>
+        <div class="fh-val">¥3,200</div>
+        <div class="fh-sub">で楽しさ5点</div>
+        <div class="star-wrap"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;">3/14（金）居酒屋</div>
+      </div>
+    </div>
+    <div class="rank-card">
+      <div class="rank-header"><div class="rank-title">一緒に飲むと楽しい人</div><div class="rank-sub">今月</div></div>
+      <div class="rank-item"><div class="rank-num">1</div><div class="rank-name">田中さん</div><div class="rank-score">楽しさ平均 4.8</div></div>
+      <div class="rank-locked"><div class="rank-num">2</div><div class="rank-blur">山田さん　4.2</div><div class="pro-pill">Pro</div></div>
+      <div class="rank-locked"><div class="rank-num">3</div><div class="rank-blur">佐藤さん　3.9</div><div class="pro-pill">Pro</div></div>
+    </div>
+    <div class="rank-card">
+      <div class="rank-header"><div class="rank-title">翌朝が良いお店</div><div class="rank-sub">今月</div></div>
+      <div class="rank-item"><div class="rank-num">1</div><div class="rank-name">バー</div><div class="rank-score">翌朝平均 😊 3.8</div></div>
+      <div class="rank-locked"><div class="rank-num">2</div><div class="rank-blur">居酒屋　😐 3.1</div><div class="pro-pill">Pro</div></div>
+    </div>
+    <div class="caution-card">
+      <div style="font-size:10px;font-weight:500;color:var(--muted);margin-bottom:4px;">ちょっと気になる</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6;">水曜の翌朝は他の曜日より体調がやや辛い傾向があります</div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="var(--muted)" stroke-width="1.5"/></svg><div class="nav-label">ホーム</div></div>
+    <div class="nav-item" onclick="goTo('screen-list')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="14" rx="2" stroke="var(--muted)" stroke-width="1.5"/></svg><div class="nav-label">記録</div></div>
+    <div class="nav-item" onclick="tap(this)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#c9922a" stroke-width="1.5"/></svg><div class="nav-label active">きおく</div></div>
+    <div class="nav-item" onclick="goTo('screen-friends')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="var(--muted)" stroke-width="1.5"/><path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg><div class="nav-label">仲間</div></div>
+    <div class="nav-item" onclick="tap(this)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><line x1="3" y1="6" x2="17" y2="6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg><div class="nav-label">設定</div></div>
+  </div>
+</div>
+
+<!-- ═══ 仲間 ═══ -->
+<div class="screen" id="screen-friends">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">20:14</span><span class="si">▲ ● ■</span></div>
+  <div style="background:var(--dark);padding:12px 18px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div style="color:var(--gold);font-size:17px;font-weight:500;">仲間</div>
+    <div style="color:var(--gold);font-size:13px;cursor:pointer;">+ 追加</div>
+  </div>
+  <div class="body">
+    <div class="top3">
+      <div class="top-card first">
+        <div class="top-rank gold">いちばん一緒に</div>
+        <div class="top-avatar">田中</div>
+        <div class="top-name">田中さん</div>
+        <div class="top-count">12回</div>
+        <div class="top-label">楽しくなる人</div>
+      </div>
+      <div class="top-card">
+        <div class="top-rank">2番目</div>
+        <div class="top-avatar" style="background:rgba(42,34,24,0.6);">山田</div>
+        <div class="top-name">山田さん</div>
+        <div class="top-count">8回</div>
+        <div class="top-label">長引かせる人</div>
+      </div>
+      <div class="top-card">
+        <div class="top-rank">3番目</div>
+        <div class="top-avatar" style="background:rgba(42,34,24,0.4);">佐藤</div>
+        <div class="top-name">佐藤さん</div>
+        <div class="top-count">5回</div>
+      </div>
+    </div>
+    <div class="section-label">全員（回数順）</div>
+    <div class="friend-item" onclick="goTo('screen-friend-detail')">
+      <div class="fi-avatar">田中</div>
+      <div class="fi-info">
+        <div class="fi-name">田中さん</div>
+        <div class="fi-meta">30代・男性</div>
+        <div class="fi-labels"><div class="fi-label">楽しくなる人</div><div class="fi-label">長引かせる人</div></div>
+      </div>
+      <div class="fi-right">
+        <div class="fi-count">12</div>
+        <div class="fi-count-label">回</div>
+        <div class="fi-share">LINEで送る</div>
+      </div>
+    </div>
+    <div class="friend-item">
+      <div class="fi-avatar">山田</div>
+      <div class="fi-info">
+        <div class="fi-name">山田さん</div>
+        <div class="fi-meta">30代・男性</div>
+        <div class="fi-labels"><div class="fi-label">長引かせる人</div></div>
+      </div>
+      <div class="fi-right">
+        <div class="fi-count">8</div>
+        <div class="fi-count-label">回</div>
+        <div class="fi-share">LINEで送る</div>
+      </div>
+    </div>
+    <div class="friend-item">
+      <div class="fi-avatar">鈴木</div>
+      <div class="fi-info">
+        <div class="fi-name">鈴木さん</div>
+        <div class="fi-meta">40代・男性</div>
+        <div class="fi-labels"><div class="fi-label">翌日注意人物</div></div>
+      </div>
+      <div class="fi-right">
+        <div class="fi-count">4</div>
+        <div class="fi-count-label">回</div>
+        <div class="fi-share">LINEで送る</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goTo('screen-home')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="var(--muted)" stroke-width="1.5"/></svg><div class="nav-label">ホーム</div></div>
+    <div class="nav-item" onclick="goTo('screen-list')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="14" rx="2" stroke="var(--muted)" stroke-width="1.5"/></svg><div class="nav-label">記録</div></div>
+    <div class="nav-item" onclick="goTo('screen-kioku')"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="var(--muted)" stroke-width="1.5"/></svg><div class="nav-label">きおく</div></div>
+    <div class="nav-item" onclick="tap(this)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="#c9922a" stroke-width="1.5"/><path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="#c9922a" stroke-width="1.5" stroke-linecap="round"/></svg><div class="nav-label active">仲間</div></div>
+    <div class="nav-item" onclick="tap(this)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><line x1="3" y1="6" x2="17" y2="6" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg><div class="nav-label">設定</div></div>
+  </div>
+</div>
+
+<!-- ═══ 仲間詳細 ═══ -->
+<div class="screen" id="screen-friend-detail">
+  <div class="status-bar" style="background:var(--dark);flex-shrink:0;"><span class="st">20:14</span><span class="si">▲ ● ■</span></div>
+  <div class="fd-header" style="flex-shrink:0;">
+    <div class="fd-back" onclick="goTo('screen-friends')">‹ 仲間</div>
+    <div class="fd-avatar">田中</div>
+    <div class="fd-name">田中さん</div>
+    <div class="fd-meta">30代・男性・12回一緒に飲んだ</div>
+  </div>
+  <div class="fd-scores">
+    <div class="fds-item"><div class="fds-label">楽しさ平均</div><div class="fds-val">4.2<span style="font-size:9px;color:var(--muted);">/5</span></div></div>
+    <div class="fds-item"><div class="fds-label">翌朝平均</div><div class="fds-val" style="font-size:20px;">😊</div></div>
+    <div class="fds-item"><div class="fds-label">平均金額</div><div class="fds-val" style="font-size:14px;">¥6,200</div></div>
+  </div>
+  <div class="body">
+    <div class="sub-card">
+      <div class="sub-row"><div class="sub-label">よく行く場所</div><div class="sub-val">新橋・銀座</div></div>
+      <div class="sub-row"><div class="sub-label">よく行くお店</div><div class="sub-val">居酒屋・バー</div></div>
+      <div class="sub-row"><div class="sub-label">平均軒数</div><div class="sub-val">2.3軒</div></div>
+      <div class="sub-row"><div class="sub-label">最後に飲んだ日</div><div class="sub-val">3月21日（金）</div></div>
+      <div class="sub-row" style="border:none;align-items:flex-start;padding-top:8px;">
+        <div class="sub-label">ラベル</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;">
+          <div style="font-size:11px;color:#854F0B;background:var(--gold-pale);padding:2px 8px;border-radius:8px;border:0.5px solid var(--gold-light);">楽しくなる人</div>
+          <div style="font-size:11px;color:#854F0B;background:var(--gold-pale);padding:2px 8px;border-radius:8px;border:0.5px solid var(--gold-light);">長引かせる人</div>
+        </div>
+      </div>
+    </div>
+    <button class="line-btn" onclick="tap(this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+      田中さんにLINEで送る
+    </button>
+    <div class="line-preview">
+      <div class="lp-label">送信プレビュー</div>
+      <div class="lp-card">
+        <div class="lp-title">田中さんへ 🍺</div>
+        <div class="lp-body">あなたは僕の「楽しくなる人」に認定されました。一緒に12回飲んで、楽しさ平均4.2点。また飲みましょう！</div>
+        <div class="lp-app">飲み会ログより</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function goTo(id) {
+  haptic(8);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById(id).querySelector('.body')?.scrollTo(0,0);
+}
+function haptic(ms) { try { if(navigator.vibrate) navigator.vibrate(ms); } catch(e){} }
+function tap(el, strong) {
+  haptic(strong?12:8);
+  const cls = strong?'tapped-s':'tapped';
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  el.addEventListener('animationend',()=>el.classList.remove(cls),{once:true});
+}
+function toggleChip(el,group) {
+  tap(el);
+  el.closest('.chip-wrap').querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function toggleScore(el) {
+  tap(el,true);
+  el.closest('.score-wrap').querySelectorAll('.score-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function selectCond(el) {
+  tap(el,true);
+  el.closest('.cond-wrap').querySelectorAll('.cond-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+let venueCount=1;
+function addVenue(){
+  if(venueCount>=2)return;
+  venueCount=2;
+  document.getElementById('venue-2').style.display='block';
+  document.getElementById('add-venue-btn').style.display='none';
+}
+function removeVenue(){
+  document.getElementById('venue-2').style.display='none';
+  venueCount=1;
+  document.getElementById('add-venue-btn').style.display='block';
+}
+const presets=[0,2000,3000,4000,5000,6000,8000,10000,15000,20000];
+const monthBase=37000;
+let current=5000,isOther=false;
+function pick(val,el){
+  tap(el);
+  presets.forEach(p=>document.getElementById('q'+p).classList.remove('sel'));
+  document.getElementById('qother').classList.remove('sel');
+  isOther=val==='other';
+  document.getElementById('adjust-row').style.display=isOther?'none':'flex';
+  document.getElementById('manual-wrap').classList.toggle('show',isOther);
+  document.getElementById('ogori-note').classList.toggle('show',val===0);
+  if(!isOther){document.getElementById('q'+val).classList.add('sel');current=val;refreshAmount();}
+  else{document.getElementById('qother').classList.add('sel');setTimeout(()=>document.getElementById('manual-input').focus(),100);}
+}
+function adjust(delta,el){
+  const nv=current+delta;
+  if(nv<0||nv>20000)return;
+  tap(el,true);current=nv;
+  presets.forEach(p=>document.getElementById('q'+p).classList.remove('sel'));
+  if(presets.includes(current))document.getElementById('q'+current).classList.add('sel');
+  refreshAmount();
+}
+function onManual(v){current=parseInt(v)||0;refreshAmount();}
+function refreshAmount(){
+  const label=current===0?'おごり（¥0）':'¥'+current.toLocaleString();
+  document.getElementById('hval').textContent=label;
+  document.getElementById('adj-amount').textContent=current===0?'¥0（おごり）':'¥'+current.toLocaleString();
+  document.getElementById('rval').textContent=label;
+  document.getElementById('rsub').textContent='今月 8回目 / 合計 ¥'+(monthBase+current).toLocaleString();
+  document.getElementById('btn-minus').classList.toggle('disabled',current<=0);
+  document.getElementById('btn-plus').classList.toggle('disabled',current>=20000);
+}
+function confirmAmount(){haptic(12);goTo('screen-night');}
+function switchKioku(tab){
+  document.getElementById('kt-matome').classList.toggle('act',tab==='matome');
+  document.getElementById('kt-hakken').classList.toggle('act',tab==='hakken');
+  document.getElementById('kb-matome').style.display=tab==='matome'?'block':'none';
+  document.getElementById('kb-hakken').style.display=tab==='hakken'?'block':'none';
+}
+refreshAmount();
+</script>
+</body>
+</html>
